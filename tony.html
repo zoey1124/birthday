@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div id="title">
+    <h1>Happy Birthday!</h1>
+    </div>
+    <div class="container">
+        <img src="photos/9.JPG" id="main">
+        <div class="overlay">
+            <div class="text">霆哥终于可以合法喝酒了。
+                <br>希望你年年有今日，岁岁有今朝！
+                <br>祝你早点学会开车，带我混广州。
+                <br>不要嘲笑我说粤语！
+            </div>
+        </div>
+    </div>
+    <div id="gamezone">
+        <div id="score">0</div>
+        <canvas id="gameCanvas" width="300" height="300"></canvas>
+        <button id="button" onclick="main()">start</button>
+    </div>
+    <style>
+        #gameCanvas {
+            position: relative;
+            margin-top: 180px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        #score {
+            position: relative;
+            margin-top: 30px;
+            text-align: center;
+            font-size: 50px;
+            font-family: 'Antic Slab', serif;
+        }
+    </style>
+    <div class="row">
+        <div class="column">
+            <img src="photos/1.JPG">
+            <img src="photos/2.JPG">
+            <img src="photos/5.JPG">
+            <img src="photos/27.JPG">
+        </div>
+        <div class="column">
+            <img src="photos/3.JPG">
+            <img src="photos/4.JPG">
+            <img src="photos/6.JPG">
+            <img src="photos/8.JPG">
+        </div>
+    </div>
+</body>
+<script>
+    /** Credit for the snake game @supergoat
+    https://github.com/zoey1124/snake/commits?author=supergoat 
+    */
+    const GAME_SPEED = 200;
+    const CANVAS_BORDER_COLOUR = 'black';
+    const CANVAS_BACKGROUND_COLOUR = "white";
+    const SNAKE_COLOUR = 'lightgreen';
+    const SNAKE_BORDER_COLOUR = 'darkgreen';
+    const FOOD_COLOUR = 'red';
+    const FOOD_BORDER_COLOUR = 'darkred';
+
+    let snake = [
+        {x: 150, y: 150},
+        {x: 140, y: 150},
+        {x: 130, y: 150},
+        {x: 120, y: 150},
+        {x: 110, y: 150}
+    ]
+    let score = 0;
+    let changingDirection = false;
+    let foodX;
+    let foodY;
+    // horizontal velocity
+    let dx = 10;
+    // vertical velocity
+    let dy = 0;
+
+    const gameCanvas = document.getElementById("gameCanvas");
+    const ctx = gameCanvas.getContext("2d");
+    
+    // Create first food location
+    createFood();
+    // Start game
+    //main();
+    // Call changeDirection whenever a key is pressed
+    document.addEventListener("keydown", changeDirection);
+
+    function main() {
+        if (didGameEnd()) {
+            return;
+        }
+        // add a delay between each call
+        setTimeout(function onTick() {
+            changeDirection = false;
+            clearCanvas();
+            drawSnake();
+            drawFood();
+            advanceSnake();
+            main();
+        }, GAME_SPEED)
+    }
+    function didGameEnd() {
+        const top = snake[0].y < 0;
+        const bottom = snake[0].y > gameCanvas.height - 10;
+        const left = snake[0].x < 0;
+        const right = snake[0].x > gameCanvas.width - 10;
+        return top || bottom || left || right;
+    }
+    /** Change the background color of the canvas*/
+    function clearCanvas() {
+        ctx.fillStyle = CANVAS_BACKGROUND_COLOUR;
+        ctx.strokestyle = CANVAS_BORDER_COLOUR;
+        ctx.fillRect(0, 0, gameCanvas.width, gameCanvas.height);
+        ctx.strokeRect(0, 0, gameCanvas.width, gameCanvas.height);
+    }
+    function drawFood() {
+        ctx.fillStyle = FOOD_COLOUR;
+        ctx.strokestyle = FOOD_BORDER_COLOUR;
+        ctx.fillRect(foodX, foodY, 10, 10);
+        ctx.strokeRect(foodX, foodY, 10, 10);
+    }
+    function randomTen(min, max) {
+        return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+    }
+    /** Locate where foodX and foodY is. */
+    function createFood() {
+        foodX = randomTen(0, gameCanvas.width - 10);
+        foodY = randomTen(0, gameCanvas.height - 10);
+        snake.forEach(function isFoodOnSnake(part) {
+            const foodSnake = part.x == foodX && part.y == foodY;
+            if (foodSnake) createFood();
+        });
+    }
+    function drawSnake() {
+      snake.forEach(drawSnakePart)
+    }
+    function drawSnakePart(snakePart) {
+        ctx.fillStyle = SNAKE_COLOUR;
+        ctx.strokestyle = SNAKE_BORDER_COLOUR;
+        ctx.fillRect(snakePart.x, snakePart.y, 10, 10);
+        ctx.strokeRect(snakePart.x, snakePart.y, 10, 10);
+    }
+    /** Move the snake */
+    function advanceSnake() {
+        const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+        snake.unshift(head);
+        const didEatFood = snake[0].x === foodX && snake[0].y === foodY;
+        if (didEatFood) {
+            score += 10;
+            document.getElementById('score').innerHTML = score;
+            createFood();
+        } else {
+            snake.pop();
+        }
+    }
+    function changeDirection(event) {
+        const LEFT_KEY = 37;
+        const RIGHT_KEY = 39;
+        const UP_KEY = 38;
+        const DOWN_KEY = 40;
+        if (changeDirection) return;
+        changeDirection = true;
+        const keyPressed = event.keyCode;
+        const goingUp = dy === -10;
+        const goingDown = dy === 10;
+        const goingLeft = dx === -10;
+        const goingRight = dx === 10;
+        if (keyPressed === LEFT_KEY && !goingRight) {
+            dx = -10;
+            dy = 0;
+        }
+        if (keyPressed === RIGHT_KEY && !goingLeft) {
+            dx = 10;
+            dy = 0;
+        }
+        if (keyPressed === UP_KEY && !goingDown) {
+            dx = 0;
+            dy = -10;
+        }
+        if (keyPressed === DOWN_KEY && !goingUp) {
+            dx = 0;
+            dy = 10;
+        }
+    }
+</script>
+
+<style>
+    #title {
+        color: lightslategrey;
+        text-align: center;
+        font-size: 30px;
+        position: relative;
+    }
+    .container {
+        position: relative;
+    }
+    #main {
+        display: block;
+        width: 100%;
+        height: auto;
+    }
+    .overlay {
+        position: absolute;
+        top:0;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100%;
+        width: 100%;
+        opacity:0;
+        transform: 2s ease;
+        background-color:lightslategrey;
+    }
+    .container:hover .overlay {
+        opacity: 0.8;
+    }
+    .text {
+        color:white;
+        font-size: 15px;
+        top: 50%;
+        left: 50%;
+        position:absolute;
+        -webkit-transform: translate(-50%, -50%);
+        -ms-transform: translate(-50%, -50%);
+        transform: translate(-50%, -50%);
+        text-align: center;
+    }
+
+    /** gallary */
+    .row {
+        display: flex;
+        padding: 0 4px;
+    }
+
+    /* Create four equal columns that sits next to each other */
+    .column {
+    flex: 50%;
+    max-width: 50%;
+    padding: 0 4px;
+    }
+
+    .column img {
+    margin-top: 8px;
+    vertical-align: middle;
+    width: 100%;
+    }
+</style>
+</html>
